@@ -11,6 +11,8 @@ use tonic::transport::Server;
 use utils::jwt::generate_key;
 use views::{refresh::refresh_tokens, logout::logout,login::login, verify_token::{TokenService, verify::verify_token_server::VerifyTokenServer}};
 
+use crate::views::verify_user::verify_user_link;
+
 
 #[tokio::main]
 async fn main() {
@@ -32,6 +34,7 @@ async fn main() {
                 .service(logout)
                 .service(refresh_tokens)
                 .service(login)
+                .service(verify_user_link)
         })
         .bind(("0.0.0.0", 8050))
         .expect("msg")
