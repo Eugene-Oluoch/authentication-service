@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package verify;
+
+service VerifyToken {
+  rpc check (TokenReceive) returns (TokenResponse);
+}
+
+
+message TokenReceive {
+  string token = 1;
+}
+
+message TokenResponse {
+  string message = 1;
+}
