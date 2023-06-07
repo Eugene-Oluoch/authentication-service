@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, option};
 
 use actix_web::{web::{self, Json}, HttpResponse, post};
 use jwt_simple::reexports::serde_json;
@@ -21,14 +21,7 @@ struct Claims {
   name: String
 }
 
-async fn email_phonenumber_route(user:User,option:Option<String>,error_message:String,choice:&OtpChoice,state:&web::Data<SharedState>) -> HttpResponse {
-  match option {
-    None => HttpResponse::BadRequest().json(ReturnError::new(error_message).await),
-    Some(_) => {
-      user_journey(state,user, choice).await
-    }
-  }
-}
+
 
 
 #[post("/login")]
@@ -40,12 +33,10 @@ pub async fn login(data:web::Json<User>,state:web::Data<SharedState>) -> HttpRes
       Some(identifier) => {
         match identifier{
           ToUse::Email =>{
-            let email = user.email.clone();
-            email_phonenumber_route(user,email,String::from("Email is required!"),&OtpChoice::Email,&state).await
+            email_phonenumber_route(user,String::from("Email is required!"),&OtpChoice::Email,&state).await
           },
           ToUse::PhoneNumber => {
-            let phone_number = user.phone_number.clone();
-            email_phonenumber_route(user,phone_number,String::from("Phone number is required!"),&OtpChoice::PhoneNumber,&state).await
+            email_phonenumber_route(user,String::from("Phone number is required!"),&OtpChoice::PhoneNumber,&state).await
           },
           ToUse::Provider =>{
             let parts: Vec<&str> = user.provider.as_ref().unwrap().split('.').collect();
@@ -97,6 +88,19 @@ pub async fn login(data:web::Json<User>,state:web::Data<SharedState>) -> HttpRes
     }
 }
 
+async fn email_phonenumber_route(user:User,error_message:String,choice:&OtpChoice,state:&web::Data<SharedState>) -> HttpResponse {
+  let option;
+  match choice {
+    OtpChoice::Email => option = &user.email,
+    OtpChoice::PhoneNumber => option = &user.phone_number
+  }
+  match option {
+    None => HttpResponse::BadRequest().json(ReturnError::new(error_message).await),
+    Some(_) => {
+      user_journey(state,user, choice).await
+    }
+  }
+}
 
 
 pub async fn generate_magic_link(client:&Client,identifier:&OtpChoice,value:&str,user_exists:bool){
