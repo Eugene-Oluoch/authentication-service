@@ -21,6 +21,15 @@ struct Claims {
   name: String
 }
 
+async fn email_phonenumber_route(user:User,option:Option<String>,error_message:String,choice:&OtpChoice,state:&web::Data<SharedState>) -> HttpResponse {
+  match option {
+    None => HttpResponse::BadRequest().json(ReturnError::new(error_message).await),
+    Some(_) => {
+      user_journey(state,user, choice).await
+    }
+  }
+}
+
 
 #[post("/login")]
 pub async fn login(data:web::Json<User>,state:web::Data<SharedState>) -> HttpResponse {
@@ -31,20 +40,12 @@ pub async fn login(data:web::Json<User>,state:web::Data<SharedState>) -> HttpRes
       Some(identifier) => {
         match identifier{
           ToUse::Email =>{
-            match user.email{
-              None => HttpResponse::BadRequest().json(ReturnError::new(String::from("Email is required!")).await),
-              Some(_) => {
-                user_journey(&state,user, &OtpChoice::Email).await
-              }
-            }
+            let email = user.email.clone();
+            email_phonenumber_route(user,email,String::from("Email is required!"),&OtpChoice::Email,&state).await
           },
           ToUse::PhoneNumber => {
-            match user.phone_number{
-              None => HttpResponse::BadRequest().json(ReturnError::new(String::from("Phone Number is required!")).await),
-              Some(_) => {
-                user_journey(&state,user, &OtpChoice::PhoneNumber).await
-              }
-            }
+            let phone_number = user.phone_number.clone();
+            email_phonenumber_route(user,phone_number,String::from("Phone number is required!"),&OtpChoice::PhoneNumber,&state).await
           },
           ToUse::Provider =>{
             let parts: Vec<&str> = user.provider.as_ref().unwrap().split('.').collect();
